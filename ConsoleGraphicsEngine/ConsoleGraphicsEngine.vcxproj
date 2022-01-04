@@ -143,11 +143,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Engine3D.cpp" />
     <ClCompile Include="src\ConsoleGraphicsEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Engine3D.h" />
     <ClInclude Include="src\vendor\olcConsoleGameEngine.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

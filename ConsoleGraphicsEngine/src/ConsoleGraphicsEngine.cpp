@@ -122,6 +122,7 @@ public:
 		//Draw Triangles
 		for (const auto &tri : m_MeshCube.triangles)
 		{
+			//rotates the cube
 			triangle triProjected, triTranslated, triRotatedZ, triRotatedZX;
 
 			MultiplyMatrixVector(tri.p[0], triRotatedZ.p[0], matRotZ);
@@ -133,33 +134,55 @@ public:
 			MultiplyMatrixVector(triRotatedZ.p[2], triRotatedZX.p[2], matRotX);
 
 			triTranslated = triRotatedZX;
+			//offset it into our screen so that we can see
 			triTranslated.p[0].z = triRotatedZX.p[0].z + 3.0f;
 			triTranslated.p[1].z = triRotatedZX.p[1].z + 3.0f;
 			triTranslated.p[2].z = triRotatedZX.p[2].z + 3.0f;
 
-			MultiplyMatrixVector(triTranslated.p[0], triProjected.p[0], m_MatProj);
-			MultiplyMatrixVector(triTranslated.p[1], triProjected.p[1], m_MatProj);
-			MultiplyMatrixVector(triTranslated.p[2], triProjected.p[2], m_MatProj);
+			vec3d normal, vecA, vecB; //normal is the normal vector to the plane made with the 2 vectors a and b
+			vecA.x = triTranslated.p[1].x - triTranslated.p[0].x;
+			vecA.y = triTranslated.p[1].y - triTranslated.p[0].y;
+			vecA.z = triTranslated.p[1].z - triTranslated.p[0].z;
 
-			//Scale into view
+			vecB.x = triTranslated.p[2].x - triTranslated.p[0].x;
+			vecB.y = triTranslated.p[2].y - triTranslated.p[0].y;
+			vecB.z = triTranslated.p[2].z - triTranslated.p[0].z;
 
-			//will make range -1 / 1 to 0 / 2
-			triProjected.p[0].x += 1.0f; triProjected.p[0].y += 1.0f;
-			triProjected.p[1].x += 1.0f; triProjected.p[1].y += 1.0f;
-			triProjected.p[2].x += 1.0f; triProjected.p[2].y += 1.0f;
+			normal.x = vecA.y * vecB.z - vecA.z * vecB.y;
+			normal.y = vecA.z * vecB.x - vecA.x * vecB.z;
+			normal.z = vecA.x * vecB.y - vecA.y * vecB.x;
 
-			//rescale it between 0 and 1 then adjusting it to screen sizes
-			triProjected.p[0].x *= 0.5f * (float)ScreenWidth();
-			triProjected.p[0].y *= 0.5f * (float)ScreenHeight();
-			triProjected.p[1].x *= 0.5f * (float)ScreenWidth();
-			triProjected.p[1].y *= 0.5f * (float)ScreenHeight();
-			triProjected.p[2].x *= 0.5f * (float)ScreenWidth();
-			triProjected.p[2].y *= 0.5f * (float)ScreenHeight();
+			float normalLength = sqrtf(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z); // returns the length of the normal
+			normal.x /= normalLength; normal.y /= normalLength; normal.z /= normalLength; //normalize the normal
 
-			DrawTriangle((int)triProjected.p[0].x, (int)triProjected.p[0].y,
-				(int)triProjected.p[1].x, (int)triProjected.p[1].y,
-				(int)triProjected.p[2].x, (int)triProjected.p[2].y,
-				PIXEL_SOLID, FG_WHITE);
+			//draw triangle only if the normal is facing the cam so if its z is negative
+			if (normal.z < 0)
+			{
+				//projects the triangles from 3d to 2d
+				MultiplyMatrixVector(triTranslated.p[0], triProjected.p[0], m_MatProj);
+				MultiplyMatrixVector(triTranslated.p[1], triProjected.p[1], m_MatProj);
+				MultiplyMatrixVector(triTranslated.p[2], triProjected.p[2], m_MatProj);
+				//Scale into view
+
+				//will make range -1 / 1 to 0 / 2
+				triProjected.p[0].x += 1.0f; triProjected.p[0].y += 1.0f;
+				triProjected.p[1].x += 1.0f; triProjected.p[1].y += 1.0f;
+				triProjected.p[2].x += 1.0f; triProjected.p[2].y += 1.0f;
+
+				//rescale it between 0 and 1 then adjusting it to screen sizes
+				triProjected.p[0].x *= 0.5f * (float)ScreenWidth();
+				triProjected.p[0].y *= 0.5f * (float)ScreenHeight();
+				triProjected.p[1].x *= 0.5f * (float)ScreenWidth();
+				triProjected.p[1].y *= 0.5f * (float)ScreenHeight();
+				triProjected.p[2].x *= 0.5f * (float)ScreenWidth();
+				triProjected.p[2].y *= 0.5f * (float)ScreenHeight();
+
+				DrawTriangle((int)triProjected.p[0].x, (int)triProjected.p[0].y,
+					(int)triProjected.p[1].x, (int)triProjected.p[1].y,
+					(int)triProjected.p[2].x, (int)triProjected.p[2].y,
+					PIXEL_SOLID, FG_WHITE);
+			}
+
 		}
 
 		return true;

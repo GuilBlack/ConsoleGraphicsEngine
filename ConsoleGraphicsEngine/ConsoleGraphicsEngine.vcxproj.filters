@@ -18,15 +18,9 @@
     <ClCompile Include="src\ConsoleGraphicsEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Engine3D.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vendor\olcConsoleGameEngine.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Engine3D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
