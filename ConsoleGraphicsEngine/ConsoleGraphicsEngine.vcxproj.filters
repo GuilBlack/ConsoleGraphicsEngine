@@ -24,4 +24,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Object Include="res\obj\LowPolyTree.obj" />
+  </ItemGroup>
 </Project>

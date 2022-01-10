@@ -1,5 +1,8 @@
 //#include "Engine3D.h"
 #include "vendor/olcConsoleGameEngine.h"
+#include <fstream>
+#include <strstream>
+#include <algorithm>
 
 struct vec3d
 {
@@ -9,11 +12,50 @@ struct vec3d
 struct triangle
 {
     vec3d p[3];
+
+	wchar_t sym;
+	short col;
 };
 
 struct mesh
 {
     std::vector<triangle> triangles;
+
+	bool LoadFromObjectFile(std::string sFileName)
+	{
+		std::ifstream f(sFileName);
+		if (!f.is_open())
+			return false;
+
+		std::vector<vec3d> vertices;
+
+		while (!f.eof())
+		{
+			char line[128];
+			f.getline(line, 128);
+
+			std::strstream s;
+			s << line;
+
+			char junk;
+
+			if (line[0] == 'v')
+			{
+				vec3d v;
+				s >> junk >> v.x >> v.y >> v.z;
+				vertices.push_back(v);
+			}
+
+			if (line[0] == 'f')
+			{
+				int f[3];
+				s >> junk >> f[0] >> f[1] >> f[2];
+				triangles.push_back({ vertices[f[0] - 1], vertices[f[1] - 1], vertices[f[2] - 1] });
+			}
+		}
+
+		return true;
+	}
 };
 
 struct mat4x4f
@@ -33,6 +75,8 @@ private:
     mesh m_MeshCube;
     mat4x4f m_MatProj;
 
+	vec3d m_vCamera = { 0, 0, 0 }; //simplified camera
+
 	float m_fTheta;
 
     void MultiplyMatrixVector(const vec3d& in, vec3d &out, const mat4x4f& mat)
@@ -48,36 +92,72 @@ private:
         }
     }
 
+	// Taken From Command Line Webcam Video
+	CHAR_INFO GetColor(float lum)
+	{
+		short bg_col, fg_col;
+		wchar_t sym;
+		int pixel_bw = (int)(13.0f * lum);
+		switch (pixel_bw)
+		{
+		case 0: bg_col = BG_BLACK; fg_col = FG_BLACK; sym = PIXEL_SOLID; break;
+
+		case 1: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_QUARTER; break;
+		case 2: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_HALF; break;
+		case 3: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_THREEQUARTERS; break;
+		case 4: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_SOLID; break;
+
+		case 5: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_QUARTER; break;
+		case 6: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_HALF; break;
+		case 7: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_THREEQUARTERS; break;
+		case 8: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_SOLID; break;
+
+		case 9:  bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_QUARTER; break;
+		case 10: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_HALF; break;
+		case 11: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_THREEQUARTERS; break;
+		case 12: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_SOLID; break;
+		default:
+			bg_col = BG_BLACK; fg_col = FG_BLACK; sym = PIXEL_SOLID;
+		}
+
+		CHAR_INFO c;
+		c.Attributes = bg_col | fg_col;
+		c.Char.UnicodeChar = sym;
+		return c;
+	}
+
 public:
     bool OnUserCreate() override
 	{
-		m_MeshCube.triangles = {
+		//m_MeshCube.triangles = {
 
-			// SOUTH
-			{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
-			{ 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+		//	// SOUTH
+		//	{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
+		//	{ 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
 
-			// EAST                                                      
-			{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
-			{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
+		//	// EAST                                                      
+		//	{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
+		//	{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
 
-			// NORTH                                                     
-			{ 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
+		//	// NORTH                                                     
+		//	{ 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
+		//	{ 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
 
-			// WEST                                                      
-			{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
-			{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
+		//	// WEST                                                      
+		//	{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
+		//	{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
 
-			// TOP                                                       
-			{ 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
-			{ 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
+		//	// TOP                                                       
+		//	{ 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
+		//	{ 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
 
-			// BOTTOM                                                    
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+		//	// BOTTOM                                                    
+		//	{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
+		//	{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
 
-		};
+		//};
+
+		m_MeshCube.LoadFromObjectFile("res/obj/LowPolyTree.obj");
 
 		// Projection Matrix
 		float fNear = 0.1f;
@@ -119,6 +199,8 @@ public:
 		matRotX.mat[2][2] = cosf(m_fTheta * 0.5f);
 		matRotX.mat[3][3] = 1;
 
+		std::vector<triangle> trianglesToRaster;
+
 		//Draw Triangles
 		for (const auto &tri : m_MeshCube.triangles)
 		{
@@ -134,10 +216,11 @@ public:
 			MultiplyMatrixVector(triRotatedZ.p[2], triRotatedZX.p[2], matRotX);
 
 			triTranslated = triRotatedZX;
+
 			//offset it into our screen so that we can see
-			triTranslated.p[0].z = triRotatedZX.p[0].z + 3.0f;
-			triTranslated.p[1].z = triRotatedZX.p[1].z + 3.0f;
-			triTranslated.p[2].z = triRotatedZX.p[2].z + 3.0f;
+			triTranslated.p[0].z = triRotatedZX.p[0].z + 10.0f;
+			triTranslated.p[1].z = triRotatedZX.p[1].z + 10.0f;
+			triTranslated.p[2].z = triRotatedZX.p[2].z + 10.0f;
 
 			vec3d normal, vecA, vecB; //normal is the normal vector to the plane made with the 2 vectors a and b
 			vecA.x = triTranslated.p[1].x - triTranslated.p[0].x;
@@ -155,13 +238,38 @@ public:
 			float normalLength = sqrtf(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z); // returns the length of the normal
 			normal.x /= normalLength; normal.y /= normalLength; normal.z /= normalLength; //normalize the normal
 
+			//vector between the surface normal and the camera
+			vec3d projLine = {
+				triTranslated.p[0].x - m_vCamera.x,
+				triTranslated.p[0].y - m_vCamera.y,
+				triTranslated.p[0].z - m_vCamera.z,
+			};
+
+			//negative only if the 2 vectors are facing different directions
+			float dotProdNormProjLine = normal.x*projLine.x + normal.y*projLine.y + normal.z*projLine.z;
+
 			//draw triangle only if the normal is facing the cam so if its z is negative
-			if (normal.z < 0)
+			if (dotProdNormProjLine < 0)
 			{
+				//Lighting
+				vec3d directionalLight = { 0.0f, 0.0f, -1.0f }; //light facing the the cube
+				float lightLength = sqrtf(directionalLight.x*directionalLight.x + directionalLight.y*directionalLight.y + 
+					directionalLight.z*directionalLight.z);
+				directionalLight.x /= lightLength; directionalLight.y /= lightLength; directionalLight.z /= lightLength;
+
+				float dotProdNormLight = normal.x*directionalLight.x + normal.y*directionalLight.y + normal.z*directionalLight.z;
+
+				CHAR_INFO c = GetColor(dotProdNormLight);
+				triTranslated.col = c.Attributes;
+				triTranslated.sym = c.Char.UnicodeChar;
+
 				//projects the triangles from 3d to 2d
 				MultiplyMatrixVector(triTranslated.p[0], triProjected.p[0], m_MatProj);
 				MultiplyMatrixVector(triTranslated.p[1], triProjected.p[1], m_MatProj);
 				MultiplyMatrixVector(triTranslated.p[2], triProjected.p[2], m_MatProj);
+				triProjected.col = triTranslated.col;
+				triProjected.sym = triTranslated.sym;
+
 				//Scale into view
 
 				//will make range -1 / 1 to 0 / 2
@@ -177,12 +285,32 @@ public:
 				triProjected.p[2].x *= 0.5f * (float)ScreenWidth();
 				triProjected.p[2].y *= 0.5f * (float)ScreenHeight();
 
-				DrawTriangle((int)triProjected.p[0].x, (int)triProjected.p[0].y,
-					(int)triProjected.p[1].x, (int)triProjected.p[1].y,
-					(int)triProjected.p[2].x, (int)triProjected.p[2].y,
-					PIXEL_SOLID, FG_WHITE);
+				trianglesToRaster.push_back(triProjected);
 			}
 
+		}
+
+		//based on the painter algorithm to draw the furthest triangles first
+		std::sort(trianglesToRaster.begin(), trianglesToRaster.end(), 
+			[](triangle &t1, triangle &t2)
+			{
+				//taking the z of the mid point of the faces and comparing them
+				float z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0f;
+				float z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0f;
+				return z1 > z2;
+			});
+
+		for (auto& triProjected : trianglesToRaster)
+		{
+			FillTriangle((int)triProjected.p[0].x, (int)triProjected.p[0].y,
+				(int)triProjected.p[1].x, (int)triProjected.p[1].y,
+				(int)triProjected.p[2].x, (int)triProjected.p[2].y,
+				triProjected.sym, triProjected.col);
+
+			DrawTriangle((int)triProjected.p[0].x, (int)triProjected.p[0].y,
+				(int)triProjected.p[1].x, (int)triProjected.p[1].y,
+				(int)triProjected.p[2].x, (int)triProjected.p[2].y,
+				PIXEL_SOLID, FG_WHITE);
 		}
 
 		return true;
