@@ -26,5 +26,6 @@
   </ItemGroup>
   <ItemGroup>
     <Object Include="res\obj\LowPolyTree.obj" />
+    <Object Include="res\obj\UtahTeapot.obj" />
   </ItemGroup>
 </Project>
